@@ -1,0 +1,18 @@
+{
+ "model_run": "w9_birth_order",
+ "git_sha": "e42d822",
+ "inputs_sha256_16": {
+  "data/births_by_order.csv": "416e5acfb8b08485",
+  "data/juki_female_japanese.csv": "d3179f395b2d37a8"
+ },
+ "inference_class": [
+  "descriptive",
+  "projection"
+ ],
+ "notes": [
+  "出生順位は県全体のみ（市町村別は非公表・D-007）",
+  "対象は日本における日本人の出生。在沖米軍・軍属（SOFA）家族の出生は含まない",
+  "将来女性人口はコーホート移動のみ（転出入・死亡を無視）。15-19歳は2026年値で固定",
+  "試算はシナリオであり予測の確約ではない"
+ ]
+}

@@ -15,6 +15,11 @@ for uid, s in d["series"].items():
 p = d["series"]["47000"]
 if sum(sum(d["series"][u["id"]][i]["births"] for u in d["units"] if u["level"] == "municipality") != p[i]["births"] for i in range(10)): errs.append("市町村合計≠県")
 if {r["unit_id"] for r in d["decomposition"]} != {u["id"] for u in d["units"]}: errs.append("要因分解の地域が画面の地域と不一致")
+bo = d.get("birth_order", {})
+if [int(r["year"]) for r in bo.get("series", [])] != list(range(2015, 2025)): errs.append("出生順位: 年が不正")
+for r, s in zip(bo.get("series", []), p):
+    if sum(int(r[k]) for k in ("births_第1子", "births_第2子", "births_第3子以上")) != s["births"]: errs.append(f"出生順位: {r['year']} 順位計≠県の出生数")
+if any(r.get("value_status") != "estimated" for r in bo.get("projection", [])): errs.append("出生順位: 試算に estimated 表示がない")
 for o in d["official_tfr_pref"]:
     if not o.get("url"): errs.append("公表値に出典URLがない")
 print("\n".join(errs) or "Build contract passed"); sys.exit(1 if errs else 0)

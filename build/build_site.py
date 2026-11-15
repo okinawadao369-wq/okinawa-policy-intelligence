@@ -51,6 +51,8 @@ data = {
     "series": {u["id"]: series(u["codes"]) for u in units},
     "decomposition": rd("results/decomposition_2015_2024.csv"),
     "associations": rd("results/panel_associations.csv"),
+    "birth_order": {"series": rd("results/birth_order_series.csv"), "decomp": rd("results/birth_order_decomp.csv"),
+                    "projection": rd("results/first_birth_projection.csv"), "backtest": rd("results/first_birth_backtest.csv")},
     "sources": rd("data/source_catalog.csv"),
     "policy_effects": json.load(open(ROOT / "data/evidence/policy_effects.json", encoding="utf-8")),
     "official_tfr_pref": [
@@ -58,13 +60,14 @@ data = {
         {"year": 2023, "tfr": 1.60, "source": "琉球新報（県人口動態統計 確定数）", "url": "https://ryukyushimpo.jp/tag/出生率"},
         {"year": 2024, "tfr": 1.54, "source": "琉球新報（厚労省 人口動態統計 概数）", "url": "https://ryukyushimpo.jp/tag/出生率"}],
     "issues": [
-        {"id": "G01", "type": "欠損", "text": "出生順位×市町村は県年報に無い（県計のみ）。二次利用申請は保留（D-002）"},
+        {"id": "G01", "type": "欠損", "text": "出生順位×市町村は公表されていない（県計のみ）。申請は行わない（D-007）"},
         {"id": "G02", "type": "欠損", "text": "賃金・物価は県単位のみ。年固定効果で吸収し、市町村差は課税対象所得で代替"},
         {"id": "G03", "type": "欠損", "text": "2025年の出生確定数は未掲載（未取得）"},
         {"id": "G04", "type": "欠損", "text": "住宅・土地統計は19市町村、家賃は11市のみ表章"},
         {"id": "G05", "type": "定義差", "text": "分母は住基日本人女性（1/1）。公表TFR（人口推計10/1）より約0.05低い"},
         {"id": "G06", "type": "定義差", "text": "SOFA世帯は住民登録・県推計の対象外（規模は未立証）"},
         {"id": "G08", "type": "少数", "text": "出生50人未満の町村は単年の率が不安定。5年プール比較を主に使う"},
+        {"id": "G15", "type": "対象", "text": "出生順位タブは県全体の日本人の出生のみ。在沖米軍・軍属（SOFA）家族の出生は含まない"},
         {"id": "G14", "type": "照合", "text": "e-Stat値と県年報が369セル中3セルで1件差（原文確認済み）"}],
 }
 site = ROOT / "site"; site.mkdir(exist_ok=True)

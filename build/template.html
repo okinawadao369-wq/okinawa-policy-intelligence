@@ -33,6 +33,7 @@ section[hidden]{display:none}
 <nav class="tabs" role="tablist">
   <button role="tab" data-tab="overview" aria-selected="true">概況・時系列</button>
   <button role="tab" data-tab="decomp" aria-selected="false">要因分解</button>
+  <button role="tab" data-tab="order" aria-selected="false">出生順位（県全体）</button>
   <button role="tab" data-tab="assoc" aria-selected="false">所得・婚姻との関連</button>
   <button role="tab" data-tab="sim" aria-selected="false">政策シミュレーター</button>
   <button role="tab" data-tab="quality" aria-selected="false">出典・品質</button>
@@ -68,6 +69,23 @@ section[hidden]{display:none}
       <p class="note" id="dec-note"></p>
       <p class="note">人口要因＝15〜49歳日本人女性の数と年齢構成の変化による分。出生率要因＝年齢別の出生率の変化による分。2つの合計が出生数の変化に一致します（記述分析・因果ではありません）。棒の細線は95%区間（出生数の偶然の揺れのみ）。</p></div>
     <div class="card"><h2>市町村の一覧（同じ比較）</h2><div class="scroll"><table id="t-dec"></table></div></div>
+  </section>
+
+  <section id="tab-order" hidden>
+    <p class="note card">このタブは<b>沖縄県全体</b>の値です（出生順位の市町村別は公表されていないため、地域の選択は反映されません）。対象は日本人の出生で、在沖米軍・軍属家族は含みません。</p>
+    <div class="kpis">
+      <div class="card kpi"><div class="l">第1子 2024年 <span class="badge b-obs">実測</span></div><div class="v" id="k-o1"></div><div class="l" id="k-o1d"></div></div>
+      <div class="card kpi"><div class="l">第1子の合計出生率 2024年 <span class="badge b-est">推計</span></div><div class="v" id="k-otfr"></div><div class="l" id="k-otfrd"></div></div>
+      <div class="card kpi"><div class="l">第1子の母 35歳以上の割合 <span class="badge b-obs">実測</span></div><div class="v" id="k-o35"></div><div class="l" id="k-o35d"></div></div>
+      <div class="card kpi"><div class="l">第1子 2030年の試算 <span class="badge b-est">推計</span></div><div class="v" id="k-o30"></div><div class="l">3つの前提による幅</div></div>
+    </div>
+    <div class="grid2" style="margin-top:16px">
+      <div class="card"><h2>出生順位別の出生数</h2><div class="chart" id="ch-ord"></div><div class="legend"><span><i class="sw" style="background:var(--c1)"></i>第1子</span><span><i class="sw" style="background:var(--c2)"></i>第2子</span><span><i class="sw" style="background:var(--c3)"></i>第3子以上</span></div></div>
+      <div class="card"><h2>第1子の出生数：実績と2030年までの試算</h2><div class="chart" id="ch-proj"></div><div class="legend"><span><i class="sw" style="background:var(--c1)"></i>実績</span><span><i class="sw" style="background:var(--c2)"></i>2022–24平均率</span><span><i class="sw" style="background:var(--muted)"></i>2024年の率で固定</span><span><i class="sw" style="background:var(--c3)"></i>傾向を延長</span></div>
+        <p class="note" id="proj-note"></p></div>
+    </div>
+    <div class="card"><h2>2015→2024年の減少を2つに分ける（出生順位別） <span class="badge b-est">推計</span></h2><div class="scroll"><table id="t-ord"></table></div>
+      <p class="note">女性の数の減少＝15〜49歳日本人女性の数と年齢構成の変化による分。出生率の低下＝年齢別の出生率の変化による分（記述分析・因果ではありません）。括弧内は95%区間。</p></div>
   </section>
 
   <section id="tab-assoc" hidden>
@@ -193,6 +211,38 @@ function decChart(host, row) {
   host.appendChild(svg);
 }
 
+function stackChart(host, cats, series) {
+  host.replaceChildren();
+  const W = Math.max(host.clientWidth || 480, 280), H = 230, m = {t: 22, r: 8, b: 26, l: 8};
+  const tot = cats.map((_, i) => series.reduce((a, s) => a + s.ys[i], 0)), hi = Math.max(1, ...tot) * 1.08, bw = (W - m.l - m.r) / cats.length;
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "出生順位別の出生数の積み上げ棒グラフ"});
+  cats.forEach((c, i) => { let acc = 0;
+    series.forEach(s => { const h = (H - m.t - m.b) * s.ys[i] / hi, y = H - m.b - (H - m.t - m.b) * (acc + s.ys[i]) / hi; acc += s.ys[i];
+      const r = el("rect", {x: m.l + i * bw + bw * .15, y, width: bw * .7, height: h, fill: s.color}); r.appendChild(el("title", {}, `${c}年 ${s.name}: ${fmt(s.ys[i])}人`)); svg.appendChild(r); });
+    svg.appendChild(el("text", {x: m.l + i * bw + bw / 2, y: H - m.b - (H - m.t - m.b) * tot[i] / hi - 4, "text-anchor": "middle", "font-size": 10, fill: "var(--muted)"}, fmt(tot[i])));
+    if (i % 2 === 0 || cats.length < 8 || i === cats.length - 1) svg.appendChild(el("text", {x: m.l + i * bw + bw / 2, y: H - 8, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)"}, c)); });
+  host.appendChild(svg);
+}
+function renderOrder() {
+  const bo = D.birth_order, S = bo.series, a = S[0], z = S[S.length - 1], P = bo.projection;
+  $("#k-o1").textContent = fmt(+z["births_第1子"]) + "人"; $("#k-o1d").textContent = `${a.year}年 ${fmt(+a["births_第1子"])}人（${((+z["births_第1子"] / +a["births_第1子"] - 1) * 100).toFixed(1)}%）`;
+  $("#k-otfr").textContent = fmt(+z["tfr_第1子"], 2); $("#k-otfrd").textContent = `${a.year}年 ${fmt(+a["tfr_第1子"], 2)}`;
+  $("#k-o35").textContent = (+z.share_first_births_mother35plus * 100).toFixed(1) + "%"; $("#k-o35d").textContent = `${a.year}年 ${(+a.share_first_births_mother35plus * 100).toFixed(1)}%`;
+  const keys = Object.keys(P[0]).filter(k => k.startsWith("first_births_")), p30 = P[P.length - 1], v30 = keys.map(k => +p30[k]);
+  $("#k-o30").textContent = `${fmt(Math.min(...v30))}〜${fmt(Math.max(...v30))}人`;
+  const yrs = S.map(r => r.year);
+  stackChart($("#ch-ord"), yrs, [["第1子", "var(--c1)"], ["第2子", "var(--c2)"], ["第3子以上", "var(--c3)"]].map(([o, c]) => ({name: o, color: c, ys: S.map(r => +r["births_" + o])})));
+  const all = yrs.concat(P.map(r => r.year)), nA = yrs.length;
+  const act = all.map((y, i) => i < nA ? +S[i]["births_第1子"] : null);
+  const sc = (k, name, color, dash) => ({name, color, dash, ys: all.map((y, i) => i === nA - 1 ? +z["births_第1子"] : i < nA ? null : +P[i - nA][k])});
+  lineChart($("#ch-proj"), all, [{name: "実績", ys: act, color: "var(--c1)"}, sc(keys.find(k => k.includes("2022")), "2022–24平均率", "var(--c2)", "5 4"),
+    sc(keys.find(k => k.includes("固定")), "2024年の率で固定", "var(--muted)", "5 4"), sc(keys.find(k => k.includes("傾向")), "傾向を延長", "var(--c3)", "5 4")], {label: "第1子の出生数の実績と試算"});
+  const bt = bo.backtest, ce = bt.map(r => +r.C_err_pct), ae = bt.map(r => +r.A_err_pct);
+  $("#proj-note").textContent = `試算は、住基の日本人女性人口を年齢に合わせて移し（転出入・死亡は含まない）、年齢別の第1子出生率を掛けたものです。予報ではなく前提ごとの幅です。過去検証（2019年までの情報で2020〜24年を試算）の誤差：傾向を延長 ${Math.min(...ce)}〜+${Math.max(...ce)}%、率を固定 ${Math.min(...ae)}〜+${Math.max(...ae)}%。`;
+  table($("#t-ord"), ["出生順位", `${a.year}年`, `${z.year}年`, "増減", "うち女性の数の減少", "うち出生率の低下（95%区間）"],
+    bo.decomp.map(r => [r.birth_order, +r.births_2015, +r.births_2024, +r.delta, +r.population_effect, `${fmt(+r.rate_effect)}（${r.rate_effect_ci95.split("..").map(v => fmt(+v)).join("〜")}）`]));
+}
+
 function table(t, head, rows) {
   t.replaceChildren(); const tr = t.insertRow(); head.forEach(h => { const th = document.createElement("th"); th.textContent = h; tr.appendChild(th); });
   rows.forEach(r => { const row = t.insertRow(); r.forEach(c => { const td = row.insertCell(); if (typeof c === "number") { td.className = "n"; td.textContent = fmt(c, Number.isInteger(c) ? 0 : 1); } else if (c && c.html) { td.append(...c.html); } else td.textContent = c ?? "—"; }); });
@@ -267,6 +317,7 @@ function render() {
     const lo = +r.ci_low, hi = +r.ci_high, clear = lo > 0 || hi < 0;
     return [mod[r.model] || r.model, lab[r.term] || r.term, r.estimate, `${r.ci_low} 〜 ${r.ci_high}`, {html: [badge(clear ? (lo > 0 ? "正の関連" : "負の関連") : "関連は不明確", clear ? "b-est" : "b-miss")]}, +r.n_obs]; }));
   simulate();
+  renderOrder();
   table($("#t-iss"), ["ID", "種別", "内容"], D.issues.map(i => [i.id, i.type, i.text]));
   table($("#t-src"), ["ID", "領域", "統計", "市町村粒度", "状態"], D.sources.map(r => {
     const a = document.createElement("a"); a.href = r.url; a.textContent = r.name; a.target = "_blank"; a.rel = "noopener";

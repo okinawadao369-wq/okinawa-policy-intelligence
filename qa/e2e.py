@@ -15,8 +15,10 @@ sel.value = "UNIT"; render();
 sp.value = "childcare"; loadPolicy(); document.getElementById("s-cap").value = 100; simulate();
 const cells = [...document.querySelectorAll("#t-sim tr")].map(tr => [...tr.cells].map(c => c.textContent));
 document.getElementById("s-rep").click();
+document.querySelector('nav.tabs button[data-tab="order"]').click();
+const ord = {o1: document.getElementById("k-o1").textContent, svgs: document.querySelectorAll("#tab-order svg").length, rows: document.querySelectorAll("#t-ord tr").length};
 document.body.setAttribute("data-e2e", JSON.stringify({kb: document.getElementById("k-b").textContent, svgs: document.querySelectorAll("svg").length,
-  sim: cells, rep: document.getElementById("s-out").value.length, fail: document.body.innerText.includes("Failed to load")}));
+  sim: cells, rep: document.getElementById("s-out").value.length, fail: document.body.innerText.includes("Failed to load"), ord}));
 """.replace("UNIT", unit)
 tmp = pathlib.Path(tempfile.mkdtemp()) / "e2e.html"
 tmp.write_text(src.replace("render();\n</script>", "render();\n" + probe + "\n</script>", 1), encoding="utf-8")
@@ -34,5 +36,9 @@ add = [c for c in r["sim"] if c and c[0].startswith("追加出生数")][0][1:]
 exp = [base * 0, base * 0.045, base * 0.09]
 for got, e in zip(add, exp):
     if abs(float(got.replace(",", "")) - e) > 0.06: errs.append(f"シミュレーター 追加出生 {got} ≠ {e:.1f}")
+o1 = int(d["birth_order"]["series"][-1]["births_第1子"])
+if r["ord"]["o1"].replace(",", "").replace("人", "") != str(o1): errs.append(f"出生順位KPI {r['ord']['o1']} ≠ {o1}")
+if r["ord"]["svgs"] < 2: errs.append(f"出生順位タブのグラフ数 {r['ord']['svgs']}")
+if r["ord"]["rows"] != 4: errs.append(f"出生順位の表の行数 {r['ord']['rows']}")
 if r["rep"] < 500: errs.append("提言レポートが生成されない")
 print("\n".join(errs) or f"E2E passed (unit {unit}, base {base:.1f}, sim {add})"); sys.exit(1 if errs else 0)
