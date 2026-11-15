@@ -39,7 +39,7 @@ section[hidden]{display:none}
 <main>
   <div class="card row">
     <label>地域 <select id="unit"></select></label>
-    <button id="csv">この地域のCSVをダウンロード</button>
+    <button id="csv">この地域のCSVをダウンロード</button><button id="csvcopy">CSVをコピー</button>
     <span class="note" id="unitnote"></span>
   </div>
 
@@ -209,13 +209,14 @@ function render() {
 }
 sel.onchange = render; ys.onchange = render; document.querySelectorAll("input[name=cmp]").forEach(r => r.onchange = render);
 let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(render, 150); });
-$("#csv").onclick = () => {
+function buildCsv() {
   const id = sel.value, u = D.units.find(x => x.id === id), ages = Object.keys(D.series[id][0].births_by_age);
   const head = ["地域", "年", "出生数", "婚姻件数", "婚姻(夫妻とも初婚)", "日本人女性15-49(年央)", "合計特殊出生率(推計)", "1人当たり課税対象所得(円)", ...ages.map(a => "出生_" + a)];
   const lines = [head].concat(D.series[id].map(r => [u.name, r.year, r.births, r.marriages, r.marriages_first, r.women15_49, r.tfr_est ?? "", r.income_per_taxpayer ?? "", ...ages.map(a => r.births_by_age[a])]));
-  const csv = "﻿" + lines.map(l => l.map(v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v).join(",")).join("\n");
-  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type: "text/csv"})); a.download = `opi_${u.name}_2015-2024.csv`; a.click(); URL.revokeObjectURL(a.href);
-};
+  return {name: `opi_${u.name}_2015-2024.csv`, text: lines.map(l => l.map(v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v).join(",")).join("\n")};
+}
+$("#csv").onclick = () => { const c = buildCsv(); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff" + c.text], {type: "text/csv"})); a.download = c.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+$("#csvcopy").onclick = async () => { const b = $("#csvcopy"); try { await navigator.clipboard.writeText(buildCsv().text); b.textContent = "コピーしました"; } catch (e) { b.textContent = "コピーできませんでした"; } setTimeout(() => b.textContent = "CSVをコピー", 2000); };
 const q = new URLSearchParams(location.search); if (q.get("unit")) sel.value = q.get("unit");
 if (q.get("tab")) { const b = document.querySelector(`nav.tabs button[data-tab="${q.get("tab")}"]`); if (b) b.click(); }
 render();
