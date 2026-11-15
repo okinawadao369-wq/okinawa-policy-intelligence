@@ -24,5 +24,9 @@ jobs:
         run: python -I build/build_site.py
       - name: Build Contract
         run: python -I build/contract.py
+      - name: Security/Privacy scan
+        run: python -I qa/security_scan.py
+      - name: Synthetic E2E (headless Chrome)
+        run: python -I qa/e2e.py
       - uses: actions/upload-artifact@v4
         with: { name: site-preview, path: site/, retention-days: 14 }
