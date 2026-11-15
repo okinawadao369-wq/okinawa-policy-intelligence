@@ -1,0 +1,41 @@
+{
+  "note": "政策効果の文献値。すべて他地域・他制度の推定であり、沖縄の市町村にそのまま当てはまる保証はない（value_status=hypothesis）。中間値が文献値でない場合は明記する。",
+  "policies": [
+    {
+      "id": "childcare",
+      "name": "保育所定員の拡大",
+      "unit": "定員を100%増やしたときの年間出生率の変化（%）",
+      "scaling": "linear_in_capacity_increase",
+      "low": 0.0, "mid": 4.5, "high": 9.0,
+      "mid_is_literature": false,
+      "evidence": [
+        {"label": "Fukai & Toriyabe (2025, RIETI DP 25-E-033) 日本の市町村データ：定員100%増で年間出生率+9%", "url": "https://www.rieti.go.jp/jp/columns/a01_0782.html", "grade": "B"},
+        {"label": "宇南山 (2023, RIETI DP 23-J-030)：待機児童が解消された後は、さらに整備しても大きな効果は期待しにくい", "url": "https://www.rieti.go.jp/jp/publications/nts/23j030.html", "grade": "B"}
+      ],
+      "range_basis": "高＝Fukai & Toriyabeの推定値9%、低＝0%（宇南山の指摘：追加整備の効果逓減）、中＝両者の平均（設定値）"
+    },
+    {
+      "id": "cash",
+      "name": "出産・子育ての現金給付",
+      "unit": "制度全体による出生数の変化（%）",
+      "scaling": "fixed",
+      "low": 0.0, "mid": 6.0, "high": 12.0,
+      "mid_is_literature": false,
+      "evidence": [
+        {"label": "Milligan (2005) カナダ・ケベック州 Allowance for Newborn Children（最大C$8,000/子）：出生率を約12%押し上げ", "url": "https://springerlink.bibliotecabuap.elogim.com/doi/10.1007/s10834-014-9394-3", "grade": "B"},
+        {"label": "Kim (2012, 2014)：同制度の恒久的な効果は小さく、主に出産時期の前倒し", "url": "https://springerlink.bibliotecabuap.elogim.com/doi/10.1007/s10834-014-9394-3", "grade": "C"}
+      ],
+      "range_basis": "高＝Milligan 12%、低＝0%（Kim：恒久効果は小さい）、中＝平均（設定値）。給付額・対象が異なれば効果も異なる"
+    },
+    {
+      "id": "custom",
+      "name": "その他（効果を自分で設定）",
+      "unit": "出生数の変化（%）",
+      "scaling": "fixed",
+      "low": 0.0, "mid": 0.0, "high": 0.0,
+      "mid_is_literature": false,
+      "evidence": [],
+      "range_basis": "利用者が入力した仮説値"
+    }
+  ]
+}
