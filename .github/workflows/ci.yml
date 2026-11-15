@@ -18,3 +18,9 @@ jobs:
         run: cd engine && python -m pytest -q
       - name: Data QA
         run: python -I qa/data_qa.py
+      - name: Build site
+        run: python -I build/build_site.py
+      - name: Build Contract
+        run: python -I build/contract.py
+      - uses: actions/upload-artifact@v4
+        with: { name: site-preview, path: site/, retention-days: 14 }

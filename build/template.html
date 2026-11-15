@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KOYA Okinawa Policy Intelligence v1.0</title>
+<style>
+:root{--fg:#1c2430;--muted:#5d6b7a;--bg:#fbfaf7;--panel:#fff;--line:#e3e0d8;--c1:#1f6f8b;--c2:#d1803b;--c3:#6b8f3a;--warn:#b5651d;--ok:#2f7d4f;--bad:#b23b3b}
+@media (prefers-color-scheme:dark){:root{--fg:#e8e6e1;--muted:#a3abb5;--bg:#15191e;--panel:#1d232a;--line:#2f3741;--c1:#5fb3d0;--c2:#e7a467;--c3:#9cc46a}}
+*{box-sizing:border-box}body{margin:0;font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6}
+header{padding:20px 20px 8px;max-width:1100px;margin:auto}h1{font-size:1.35rem;margin:0}h2{font-size:1.05rem;margin:0 0 8px}
+.sub{color:var(--muted);font-size:.85rem}main{max-width:1100px;margin:auto;padding:0 20px 40px;display:grid;gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.kpi .v{font-size:1.6rem;font-variant-numeric:tabular-nums}.kpi .l{color:var(--muted);font-size:.8rem}
+select,button{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg)}button{cursor:pointer}
+.badge{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:999px;border:1px solid currentColor;margin-left:6px;vertical-align:middle}
+.b-obs{color:var(--ok)}.b-est{color:var(--c1)}.b-hyp{color:var(--c2)}.b-miss{color:var(--bad)}
+.chart{position:relative;width:100%}.chart svg{width:100%;height:auto;display:block}.tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:.78rem;white-space:nowrap;display:none;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+table{border-collapse:collapse;width:100%;font-size:.82rem}th,td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}td.n{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto;max-width:100%}.scroll table{white-space:nowrap}main>*,.grid2>*,.kpis>*{min-width:0}.note{color:var(--muted);font-size:.8rem;margin:6px 0 0}.legend span{margin-right:12px;font-size:.8rem}.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;max-width:1100px;margin:8px auto 0;padding:0 20px}nav.tabs button[aria-selected=true]{background:var(--fg);color:var(--bg)}
+section[hidden]{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>KOYA Okinawa Policy Intelligence v1.0</h1>
+  <div class="sub">沖縄県41市町村の出生・婚姻・人口・所得の統合ダッシュボード（2015〜2024年）。
+    <span class="badge b-obs">実測</span><span class="badge b-est">推計</span><span class="badge b-hyp">仮説</span><span class="badge b-miss">未取得</span>
+    ・ビルド <code id="sha"></code></div>
+</header>
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="overview" aria-selected="true">概況・時系列</button>
+  <button role="tab" data-tab="decomp" aria-selected="false">要因分解</button>
+  <button role="tab" data-tab="assoc" aria-selected="false">所得・婚姻との関連</button>
+  <button role="tab" data-tab="quality" aria-selected="false">出典・品質</button>
+</nav>
+<main>
+  <div class="card row">
+    <label>地域 <select id="unit"></select></label>
+    <button id="csv">この地域のCSVをダウンロード</button><button id="csvcopy">CSVをコピー</button>
+    <span class="note" id="unitnote"></span>
+  </div>
+
+  <section id="tab-overview">
+    <div class="kpis">
+      <div class="card kpi"><div class="l">出生数 2024年 <span class="badge b-obs">実測</span></div><div class="v" id="k-b"></div><div class="l" id="k-bd"></div></div>
+      <div class="card kpi"><div class="l">婚姻件数 2024年 <span class="badge b-obs">実測</span></div><div class="v" id="k-m"></div><div class="l" id="k-md"></div></div>
+      <div class="card kpi"><div class="l">合計特殊出生率 2024年 <span class="badge b-est">推計</span></div><div class="v" id="k-t"></div><div class="l" id="k-td"></div></div>
+      <div class="card kpi"><div class="l">日本人女性15〜49歳 <span class="badge b-obs">実測</span></div><div class="v" id="k-w"></div><div class="l" id="k-wd"></div></div>
+    </div>
+    <div class="grid2" style="margin-top:16px">
+      <div class="card"><h2>出生数と婚姻件数</h2><div class="chart" id="ch-bm"></div><div class="legend"><span><i class="sw" style="background:var(--c1)"></i>出生数</span><span><i class="sw" style="background:var(--c2)"></i>婚姻件数</span></div></div>
+      <div class="card"><h2>合計特殊出生率（推計）</h2><div class="chart" id="ch-tfr"></div><div class="legend"><span><i class="sw" style="background:var(--c1)"></i>本推計（分母＝住基日本人女性）</span><span id="lg-off"><i class="sw" style="background:var(--c2)"></i>公表値（県全体のみ）</span></div>
+        <p class="note">本推計は公表値より約0.05低めに出ます（分母の定義差・G05）。出生50人未満の町村は年ごとの揺れが大きいので「要因分解」タブの5年比較を参照してください。</p></div>
+      <div class="card"><h2>母の年齢別出生数 <select id="agey"></select></h2><div class="chart" id="ch-age"></div></div>
+      <div class="card"><h2>納税義務者1人当たり課税対象所得（万円） <span class="badge b-obs">実測</span></h2><div class="chart" id="ch-inc"></div><p class="note">年度値（前年の所得）。名目。個人の給与ではなく、所得割の納税義務者1人当たりの課税対象所得です。</p></div>
+    </div>
+  </section>
+
+  <section id="tab-decomp" hidden>
+    <div class="card"><h2>出生数の変化を2つに分ける <span class="badge b-est">推計</span></h2>
+      <div class="row"><label><input type="radio" name="cmp" value="pooled_2015-19_2020-24" checked> 5年平均で比較（2015-19 → 2020-24）</label>
+        <label><input type="radio" name="cmp" value="single_2015_2024"> 単年で比較（2015 → 2024）</label></div>
+      <div class="chart" id="ch-dec"></div>
+      <p class="note" id="dec-note"></p>
+      <p class="note">人口要因＝15〜49歳日本人女性の数と年齢構成の変化による分。出生率要因＝年齢別の出生率の変化による分。2つの合計が出生数の変化に一致します（記述分析・因果ではありません）。棒の細線は95%区間（出生数の偶然の揺れのみ）。</p></div>
+    <div class="card"><h2>市町村の一覧（同じ比較）</h2><div class="scroll"><table id="t-dec"></table></div></div>
+  </section>
+
+  <section id="tab-assoc" hidden>
+    <div class="card"><h2>所得・婚姻・就業・住宅との関連 <span class="badge b-est">推計</span></h2>
+      <div class="scroll"><table id="t-assoc"></table></div>
+      <p class="note"><b>結論：公表データの細かさでは、所得や住宅費が出生率をどれだけ動かすかを市町村ごとには示せません。</b>95%区間が0をまたぐものは「関連は不明確」と表示しています。婚姻率との正の関連は、婚姻が出生の経路であることを反映したもので、政策効果を意味しません。</p></div>
+  </section>
+
+  <section id="tab-quality" hidden>
+    <div class="card"><h2>欠損・定義の違い</h2><div class="scroll"><table id="t-iss"></table></div></div>
+    <div class="card"><h2>出典一覧</h2><div class="scroll"><table id="t-src"></table></div></div>
+    <div class="card"><h2>推計方法</h2><p class="note">合計特殊出生率（推計）＝Σ5×（年齢5歳階級別の出生数 ÷ 年央の日本人女性人口）。年央人口は当年1/1と翌年1/1の住基人口の平均。14歳以下は15〜19歳、50歳以上は45〜49歳に含めています。2022年の県年報は画像PDFのため文字認識で取得し、3重の検算を通った値のみを採用しています（D-003）。</p></div>
+  </section>
+</main>
+<script>
+const D = /*__DATA__*/null;
+const $ = (s) => document.querySelector(s);
+const fmt = (v, d = 0) => v == null ? "—" : Number(v).toLocaleString("ja-JP", {minimumFractionDigits: d, maximumFractionDigits: d});
+const el = (tag, attrs = {}, text) => { const e = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; };
+$("#sha").textContent = D.built_from;
+
+// 地域セレクタ
+const sel = $("#unit");
+const groups = [["県全体", "prefecture"], ["保健所圏域", "health_center"], ["市町村", "municipality"]];
+for (const [label, lv] of groups) {
+  const og = document.createElement("optgroup"); og.label = label;
+  D.units.filter(u => u.level === lv).forEach(u => og.appendChild(new Option(u.level === "municipality" ? `${u.name}（${u.id}）` : u.name, u.id)));
+  sel.appendChild(og);
+}
+const ys = $("#agey"); D.series["47000"].forEach(r => ys.appendChild(new Option(r.year + "年", r.year))); ys.value = 2024;
+
+// タブ
+document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav.tabs button").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== "tab-" + b.dataset.tab);
+  render();
+});
+
+function lineChart(host, xs, lines, opts = {}) {
+  host.replaceChildren();
+  const W = Math.max(host.clientWidth || 480, 280), H = 220, m = {t: 14, r: 12, b: 26, l: 52};
+  const vals = lines.flatMap(l => l.ys.filter(v => v != null));
+  if (!vals.length) { host.textContent = "データなし（未取得）"; return; }
+  let lo = opts.zero ? 0 : Math.min(...vals), hi = Math.max(...vals); if (lo === hi) { lo -= 1; hi += 1; }
+  const pad = (hi - lo) * 0.08; lo = opts.zero ? 0 : lo - pad; hi += pad;
+  const X = i => m.l + (W - m.l - m.r) * i / (xs.length - 1), Y = v => H - m.b - (H - m.t - m.b) * (v - lo) / (hi - lo);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""});
+  for (let k = 0; k <= 4; k++) { const v = lo + (hi - lo) * k / 4; svg.appendChild(el("line", {x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), stroke: "var(--line)"}));
+    svg.appendChild(el("text", {x: m.l - 6, y: Y(v) + 4, "text-anchor": "end", "font-size": 11, fill: "var(--muted)"}, fmt(v, opts.dec || 0))); }
+  xs.forEach((x, i) => { if (i % 2 === 0 || xs.length < 8) svg.appendChild(el("text", {x: X(i), y: H - 8, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)"}, x)); });
+  lines.forEach(l => {
+    const pts = l.ys.map((v, i) => v == null ? null : [X(i), Y(v)]);
+    let d = ""; pts.forEach((p, i) => { if (p) d += (d && pts[i - 1] ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1); });
+    svg.appendChild(el("path", {d, fill: "none", stroke: l.color, "stroke-width": 2, "stroke-dasharray": l.dash || ""}));
+    pts.forEach(p => p && svg.appendChild(el("circle", {cx: p[0], cy: p[1], r: l.dot || 2.5, fill: l.color})));
+  });
+  host.appendChild(svg);
+  const tip = document.createElement("div"); tip.className = "tip"; host.appendChild(tip);
+  svg.addEventListener("pointermove", ev => {
+    const r = svg.getBoundingClientRect(), sx = (ev.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(xs.length - 1, Math.round((sx - m.l) / ((W - m.l - m.r) / (xs.length - 1)))));
+    tip.style.display = "block"; tip.textContent = xs[i] + "：" + lines.map(l => `${l.name} ${fmt(l.ys[i], opts.dec || 0)}`).join("／");
+    tip.style.left = Math.min(ev.clientX - r.left + 10, r.width - 200) + "px"; tip.style.top = (ev.clientY - r.top - 34) + "px";
+  });
+  svg.addEventListener("pointerleave", () => tip.style.display = "none");
+}
+
+function barChart(host, cats, vals, color) {
+  host.replaceChildren();
+  const W = Math.max(host.clientWidth || 480, 280), H = 200, m = {t: 18, r: 8, b: 26, l: 48}, hi = Math.max(1, ...vals);
+  const bw = (W - m.l - m.r) / cats.length;
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "母の年齢別出生数の棒グラフ"});
+  cats.forEach((c, i) => { const h = (H - m.t - m.b) * vals[i] / hi;
+    svg.appendChild(el("rect", {x: m.l + i * bw + bw * .15, y: H - m.b - h, width: bw * .7, height: h, fill: color}));
+    svg.appendChild(el("text", {x: m.l + i * bw + bw / 2, y: H - 8, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)"}, c.replace("歳", "")));
+    svg.appendChild(el("text", {x: m.l + i * bw + bw / 2, y: H - m.b - h - 4, "text-anchor": "middle", "font-size": 11, fill: "var(--fg)"}, fmt(vals[i]))); });
+  host.appendChild(svg);
+}
+
+function decChart(host, row) {
+  host.replaceChildren();
+  if (!row || row.status !== "estimated") { host.textContent = "この比較は推計できません（分母に0の年齢階級）"; return; }
+  const items = [["出生数の変化", +row.change, null, null, "var(--fg)"], ["人口要因", +row.population_effect, +row.pop_ci_low, +row.pop_ci_high, "var(--c1)"], ["出生率要因", +row.rate_effect, +row.rate_ci_low, +row.rate_ci_high, "var(--c2)"]];
+  const W = Math.max(host.clientWidth || 480, 260), narrow = W < 560;
+  const H = narrow ? 210 : 170, m = narrow ? {l: 8, r: 8, t: 6, b: 6} : {l: 96, r: 150, t: 10, b: 10};
+  const ext = Math.max(...items.flatMap(i => [Math.abs(i[1]), Math.abs(i[2] ?? 0), Math.abs(i[3] ?? 0)])) || 1;
+  const X = v => m.l + (W - m.l - m.r) * (v + ext) / (2 * ext), bh = (H - m.t - m.b) / items.length;
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "要因分解の横棒グラフ"});
+  svg.appendChild(el("line", {x1: X(0), x2: X(0), y1: m.t, y2: H - m.b, stroke: "var(--muted)"}));
+  items.forEach(([lab, v, lo, hi, col], i) => { const y = m.t + i * bh + (narrow ? bh * .38 : bh * .2), h = narrow ? bh * .45 : bh * .6;
+    if (!narrow) svg.appendChild(el("text", {x: m.l - 8, y: y + h * .7, "text-anchor": "end", "font-size": 12, fill: "var(--fg)"}, lab));
+    svg.appendChild(el("rect", {x: Math.min(X(0), X(v)), y, width: Math.abs(X(v) - X(0)), height: h, fill: col, opacity: .85}));
+    if (lo != null && !isNaN(lo)) svg.appendChild(el("line", {x1: X(lo), x2: X(hi), y1: y + h / 2, y2: y + h / 2, stroke: "var(--fg)", "stroke-width": 1.5}));
+    const val = (v > 0 ? "+" : "") + fmt(v, 1) + (lo != null && !isNaN(lo) ? `（${fmt(lo, 1)}〜${fmt(hi, 1)}）` : "");
+    if (narrow) svg.appendChild(el("text", {x: m.l, y: y - 5, "font-size": 12, fill: "var(--fg)"}, lab + "　" + val));
+    else svg.appendChild(el("text", {x: W - m.r + 8, y: y + h * .7, "text-anchor": "start", "font-size": 12, fill: "var(--fg)"}, val)); });
+  host.appendChild(svg);
+}
+
+function table(t, head, rows) {
+  t.replaceChildren(); const tr = t.insertRow(); head.forEach(h => { const th = document.createElement("th"); th.textContent = h; tr.appendChild(th); });
+  rows.forEach(r => { const row = t.insertRow(); r.forEach(c => { const td = row.insertCell(); if (typeof c === "number") { td.className = "n"; td.textContent = fmt(c, Number.isInteger(c) ? 0 : 1); } else if (c && c.html) { td.append(...c.html); } else td.textContent = c ?? "—"; }); });
+}
+const badge = (txt, cls) => { const s = document.createElement("span"); s.className = "badge " + cls; s.textContent = txt; return s; };
+
+function render() {
+  const id = sel.value, u = D.units.find(x => x.id === id), s = D.series[id], last = s[s.length - 1], first = s[0];
+  $("#unitnote").textContent = u.level === "municipality" ? `${u.health_center}・団体コード ${u.lg_code6}` : `${u.n_munis}市町村の合計`;
+  const pct = (a, b) => b ? ((a / b - 1) * 100).toFixed(1) + "%（2015年比）" : "";
+  $("#k-b").textContent = fmt(last.births); $("#k-bd").textContent = pct(last.births, first.births);
+  $("#k-m").textContent = fmt(last.marriages); $("#k-md").textContent = pct(last.marriages, first.marriages);
+  $("#k-t").textContent = fmt(last.tfr_est, 2); $("#k-td").textContent = first.tfr_est ? `2015年 ${fmt(first.tfr_est, 2)}` : "";
+  $("#k-w").textContent = fmt(last.women15_49); $("#k-wd").textContent = pct(last.women15_49, first.women15_49);
+  const years = s.map(r => r.year);
+  lineChart($("#ch-bm"), years, [{name: "出生数", ys: s.map(r => r.births), color: "var(--c1)"}, {name: "婚姻件数", ys: s.map(r => r.marriages), color: "var(--c2)"}], {zero: true, label: "出生数と婚姻件数の推移"});
+  const off = id === "47000" ? years.map(y => (D.official_tfr_pref.find(o => o.year === y) || {}).tfr ?? null) : null;
+  $("#lg-off").hidden = !off;
+  lineChart($("#ch-tfr"), years, [{name: "推計", ys: s.map(r => r.tfr_est), color: "var(--c1)"}].concat(off ? [{name: "公表値", ys: off, color: "var(--c2)", dash: "4 3", dot: 4}] : []), {dec: 2, label: "合計特殊出生率の推移"});
+  const ar = s.find(r => r.year == ys.value); barChart($("#ch-age"), Object.keys(ar.births_by_age), Object.values(ar.births_by_age), "var(--c1)");
+  lineChart($("#ch-inc"), years, [{name: "万円", ys: s.map(r => r.income_per_taxpayer == null ? null : r.income_per_taxpayer / 10000), color: "var(--c3)"}], {dec: 1, label: "納税義務者1人当たり課税対象所得（万円）"});
+  const cmp = document.querySelector("input[name=cmp]:checked").value;
+  const row = D.decomposition.find(r => r.unit_id === id && r.comparison === cmp);
+  decChart($("#ch-dec"), row);
+  $("#dec-note").textContent = row && row.status === "estimated" ? `年平均の出生数 ${fmt(+row.births_1)} → ${fmt(+row.births_2)}。合計特殊出生率（推計）${row.tfr_1} → ${row.tfr_2}。` + (u.level === "municipality" && +row.births_1 < 50 ? " ※出生数が少ないため区間が広く、解釈に注意。" : "") : "";
+  const f1 = v => v == null || v === "" ? "—" : fmt(+v, 1);
+  table($("#t-dec"), ["市町村", "保健所", "出生/年(前)", "出生/年(後)", "変化", "人口要因", "出生率要因", "TFR前→後", "注意"],
+    D.decomposition.filter(r => r.level === "municipality" && r.comparison === cmp).map(r => [r.name, (D.units.find(x => x.id === r.unit_id) || {}).health_center,
+      f1(r.births_1), f1(r.births_2), f1(r.change), f1(r.population_effect), f1(r.rate_effect), `${(+r.tfr_1).toFixed(2)} → ${(+r.tfr_2).toFixed(2)}`,
+      +r.births_1 < 50 ? {html: [badge("少数・揺れ大", "b-miss")]} : ""]));
+  document.querySelectorAll("#t-dec td:nth-child(n+3):nth-child(-n+7)").forEach(td => td.className = "n");
+  const lab = {log_inc: "1人当たり課税対象所得（対数）", log_mar_rate: "婚姻率（対数）", female_lfpr_2020: "女性労働力率（2020）", private_rental_share_2023: "民営借家比率（2023）", unmarried_share_15p_2020: "未婚者割合（15歳以上, 2020）"};
+  const mod = {model1_income: "年次パネル", model2_income_marriage: "年次パネル＋婚姻率", cross_section_2020_24: "横断（2020-24 TFR）"};
+  table($("#t-assoc"), ["分析", "指標", "推定値", "95%区間", "判定", "観測数"], D.associations.map(r => {
+    const lo = +r.ci_low, hi = +r.ci_high, clear = lo > 0 || hi < 0;
+    return [mod[r.model] || r.model, lab[r.term] || r.term, r.estimate, `${r.ci_low} 〜 ${r.ci_high}`, {html: [badge(clear ? (lo > 0 ? "正の関連" : "負の関連") : "関連は不明確", clear ? "b-est" : "b-miss")]}, +r.n_obs]; }));
+  table($("#t-iss"), ["ID", "種別", "内容"], D.issues.map(i => [i.id, i.type, i.text]));
+  table($("#t-src"), ["ID", "領域", "統計", "市町村粒度", "状態"], D.sources.map(r => {
+    const a = document.createElement("a"); a.href = r.url; a.textContent = r.name; a.target = "_blank"; a.rel = "noopener";
+    return [r.source_id, r.domain, {html: [a]}, r.geo_level, r.status_2026_11_15]; }));
+}
+sel.onchange = render; ys.onchange = render; document.querySelectorAll("input[name=cmp]").forEach(r => r.onchange = render);
+let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(render, 150); });
+function buildCsv() {
+  const id = sel.value, u = D.units.find(x => x.id === id), ages = Object.keys(D.series[id][0].births_by_age);
+  const head = ["地域", "年", "出生数", "婚姻件数", "婚姻(夫妻とも初婚)", "日本人女性15-49(年央)", "合計特殊出生率(推計)", "1人当たり課税対象所得(円)", ...ages.map(a => "出生_" + a)];
+  const lines = [head].concat(D.series[id].map(r => [u.name, r.year, r.births, r.marriages, r.marriages_first, r.women15_49, r.tfr_est ?? "", r.income_per_taxpayer ?? "", ...ages.map(a => r.births_by_age[a])]));
+  return {name: `opi_${u.name}_2015-2024.csv`, text: lines.map(l => l.map(v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v).join(",")).join("\n")};
+}
+$("#csv").onclick = () => { const c = buildCsv(); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff" + c.text], {type: "text/csv"})); a.download = c.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+$("#csvcopy").onclick = async () => { const b = $("#csvcopy"); try { await navigator.clipboard.writeText(buildCsv().text); b.textContent = "コピーしました"; } catch (e) { b.textContent = "コピーできませんでした"; } setTimeout(() => b.textContent = "CSVをコピー", 2000); };
+const q = new URLSearchParams(location.search); if (q.get("unit")) sel.value = q.get("unit");
+if (q.get("tab")) { const b = document.querySelector(`nav.tabs button[data-tab="${q.get("tab")}"]`); if (b) b.click(); }
+render();
+</script>
+</body>
+</html>

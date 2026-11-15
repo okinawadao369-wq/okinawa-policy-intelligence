@@ -19,7 +19,7 @@ jobs:
         with: { ref: "${{ inputs.git_sha }}" }
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install numpy pytest && (cd engine && python -m pytest -q) && python -I qa/data_qa.py
+      - run: pip install numpy pytest && (cd engine && python -m pytest -q) && python -I qa/data_qa.py && python -I build/build_site.py && python -I build/contract.py
       - uses: actions/upload-pages-artifact@v3
         with: { path: site }
   deploy:
