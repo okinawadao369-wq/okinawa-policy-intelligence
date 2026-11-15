@@ -18,6 +18,8 @@ jobs:
         run: cd engine && python -m pytest -q
       - name: Data QA
         run: python -I qa/data_qa.py
+      - name: Proposals check (Human Approval records)
+        run: python -I qa/proposals_check.py
       - name: Build site
         run: python -I build/build_site.py
       - name: Build Contract

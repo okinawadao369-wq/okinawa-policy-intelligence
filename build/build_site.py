@@ -52,6 +52,7 @@ data = {
     "decomposition": rd("results/decomposition_2015_2024.csv"),
     "associations": rd("results/panel_associations.csv"),
     "sources": rd("data/source_catalog.csv"),
+    "policy_effects": json.load(open(ROOT / "data/evidence/policy_effects.json", encoding="utf-8")),
     "official_tfr_pref": [
         {"year": 2020, "tfr": 1.83, "source": "沖縄県 令和2年人口動態統計（確定数）の概況", "url": "https://www.pref.okinawa.jp/_res/projects/default_project/_page_/001/016/429/r2jinkoudoutai.pdf"},
         {"year": 2023, "tfr": 1.60, "source": "琉球新報（県人口動態統計 確定数）", "url": "https://ryukyushimpo.jp/tag/出生率"},
