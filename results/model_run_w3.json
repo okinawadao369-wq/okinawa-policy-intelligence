@@ -1,0 +1,12 @@
+{
+  "run_id": "w3-decomp-2015-2024",
+  "method": "symmetric_decomposition",
+  "git_sha_base": "90301f3677d16b7d64d939824e24b441e7943710",
+  "input_hash": "25d6a86810cdf90a64d451f35a483daa587603789f7636b5391f67dd26e28320",
+  "params": {
+    "bootstrap": 2000,
+    "seed": 20261115,
+    "denominator": "juki_japanese_female_midyear"
+  },
+  "inference_class": "descriptive"
+}
