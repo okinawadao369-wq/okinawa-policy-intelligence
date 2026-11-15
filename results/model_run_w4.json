@@ -1,0 +1,11 @@
+{
+  "run_id": "w4-panel",
+  "method": "fe_poisson+cluster_bootstrap; spearman",
+  "git_sha_base": "ac7fdfde027a10c7cf7d6b04b253d698f2e7714b",
+  "input_hash": "191d7fda471347725998337df0b6d6db6fc33caad69ffdad0d188563052d6070",
+  "params": {
+    "cluster_boot": 999,
+    "seed": 20261115
+  },
+  "inference_class": "associational"
+}
