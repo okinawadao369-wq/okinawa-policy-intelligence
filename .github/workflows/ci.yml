@@ -1,0 +1,20 @@
+name: CI (Artifact Validation + Data QA)
+# PR と push で実行。本番公開はしない（Pages は無効のまま）。
+on:
+  pull_request:
+  push:
+    branches: [main, preview]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install numpy pytest
+      - name: Engine tests (synthetic data)
+        run: cd engine && python -m pytest -q
+      - name: Data QA
+        run: python -I qa/data_qa.py

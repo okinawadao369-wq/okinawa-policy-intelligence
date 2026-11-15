@@ -1,0 +1,33 @@
+name: Release (Human Review gate → Production)
+# 手動実行のみ。environment "production" に必須レビュアー（宮城浩也）を設定し、承認されるまで公開ジョブは動かない。
+# Pages の有効化とカスタムドメイン設定は、初回承認時に人間が行う（docs/RELEASE.md）。
+on:
+  workflow_dispatch:
+    inputs:
+      git_sha:
+        description: "公開する Git SHA（Human Review 済み）"
+        required: true
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ inputs.git_sha }}" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install numpy pytest && (cd engine && python -m pytest -q) && python -I qa/data_qa.py
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: site }
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4
